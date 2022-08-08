@@ -1,6 +1,6 @@
 # 数据配置
 month = 7
-day = 4
+day = 7
 data_dir_path = "E:/workspace/A-Experiment-code/FORM_Experiment_Code/dataset/ExperimentData/"
 data_path = data_dir_path + "raw_data//%02d/clear%d.csv" % (month, day)
 
@@ -43,8 +43,8 @@ XREGION = (-74.01, -73.93)
 YREGION = (40.70, 40.92)
 
 
-NUM_GRID_X = 10
-NUM_GRID_Y = 10
+NUM_GRID_X = 500
+NUM_GRID_Y = 500
 
 
 

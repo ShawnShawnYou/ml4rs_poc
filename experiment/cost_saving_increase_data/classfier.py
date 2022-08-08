@@ -4,76 +4,28 @@ import torch.nn as nn
 import torch.nn.functional as F
 # from sklearn.metrics import accuracy_score
 import torch.utils.data as Data
+from ignite.metrics import Accuracy, Loss, Recall, Precision
 import os
 from setting import *
+from Net1 import Net
 torch.manual_seed(1)
 
 
 
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
 
-        self.input = nn.Linear(10, 20)
-        self.fc1 = nn.Linear(20, 40)
-        self.fc2 = nn.Linear(40, 80)
-        self.fc3 = nn.Linear(80, 40)
-        self.fc4 = nn.Linear(40, 20)
-        self.output = nn.Linear(20, 1)
-
-        self.norm_20 = nn.BatchNorm1d(20)
-        self.norm_40 = nn.BatchNorm1d(40)
-        self.norm_80 = nn.BatchNorm1d(80)
-
-        self.tanh = nn.Tanh()
-        self.sigmoid = nn.Sigmoid()
-        self.Softmax = nn.Softmax()
-
-    def forward(self, x):
-        x = self.sigmoid(self.norm_20(self.input(x)))
-        x = self.sigmoid(self.norm_40(self.fc1(x)))
-        x = self.sigmoid(self.norm_80(self.fc2(x)))
-        x = self.sigmoid(self.norm_40(self.fc3(x)))
-        x = self.sigmoid(self.norm_20(self.fc4(x)))
-        x = self.sigmoid(self.output(x))
-
-        return x
-
-    # def predict(self, x):
-    #     pred = F.softmax(self.forward(x))
-    #     ans = []
-    #     for t in pred:
-    #         if t[0] > t[1]:
-    #             ans.append(0)
-    #         else:
-    #             ans.append(1)
-    #     return torch.tensor(ans)
-
-
-
-try:
-    net = torch.load('net80.pth')
-except:
-    net = Net()
-net = net.cuda()
-
-loss_func = nn.BCELoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
-# loss_func = nn.MSELoss()
 
 
 
 def data_filter(path):
     original_data = numpy.load(path, allow_pickle=True)
-    X = original_data[:, 0:10]
-    Y = original_data[:, 10:11]
+    X = original_data[:, 0:15]
+    Y = original_data[:, 15:16]
     X = torch.from_numpy(X).type(torch.FloatTensor)
     Y = torch.from_numpy(Y).type(torch.FloatTensor)
     return X, Y
 
 
 def data_loader(x, y):
-    nw = min([os.cpu_count(), MINIBATCH_SIZE if MINIBATCH_SIZE > 1 else 0, 8])
     torch_dataset = Data.TensorDataset(x, y)
     loader = Data.DataLoader(
         dataset=torch_dataset,
@@ -93,9 +45,11 @@ def evaluate_accuracy(x, y, net):
 
 def train(net, train_x, train_y, loss_func, num_epochs, optimizer=None):
 
-    evaluate_x, evaluate_y = data_filter('data_7.4_5.npy')
-    evaluate_x = evaluate_x.cuda()
-    evaluate_y = evaluate_y.cuda()
+    evaluate_x, evaluate_y = data_filter('new_data_7.7_5.npy')
+
+    test_acc = Accuracy()
+    test_recall = Recall()
+    test_precision = Precision()
 
     train_data_loader = data_loader(train_x, train_y)
 
@@ -104,30 +58,108 @@ def train(net, train_x, train_y, loss_func, num_epochs, optimizer=None):
             batch_x = batch_x.cuda()
             batch_y = batch_y.cuda()
             out = net(batch_x)
+            pred = out.ge(0.5)
             loss = loss_func(out, batch_y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             train_loss = loss.item()
 
-        print(epoch)
+            test_acc.update((pred, batch_y))
+            test_recall.update((pred, batch_y))
+            test_precision.update((pred, batch_y))
 
-        if (epoch + 1) % 1 == 0:
+        net.eval()
+        val_acc = evaluate_accuracy(evaluate_x.cuda(), evaluate_y.cuda(), net)
+        net.train()
+        total_acc = test_acc.compute()
+        total_recall = test_recall.compute()
+        total_precision = test_precision.compute()
 
-            # train_acc = evaluate_accuracy(train_x, train_y, net)
-            train_acc = evaluate_accuracy(evaluate_x.cuda(), evaluate_y.cuda(), net)
-            # train_acc = accuracy_score(net.predict(X), Y)
-            print('epoch %d ,loss %.4f' % (epoch + 1, train_loss) +', train acc {:.2f}%'
-                  .format(train_acc*100))
-            torch.save(net, 'net80.pth')
+        print(f"Epoch: {epoch}",
+              f"Avg loss: {train_loss:>8f}, "
+              f"Train acc: {(100 * total_acc):>0.1f}%, "
+              f"Valid acc: {(100 * val_acc):>0.1f}%, "
+              f"Precision: {(100 * total_precision):>0.1f}%, "
+              f"Recall: {(100 * total_recall):>0.1f}%")
+        torch.save(net, 'net80.pth')
+        test_precision.reset()
+        test_acc.reset()
+        test_recall.reset()
+
+        # if (epoch + 1) % 1 == 0:
+        #
+        #     # train_acc = evaluate_accuracy(train_x, train_y, net)
+        #     train_acc = evaluate_accuracy(evaluate_x.cuda(), evaluate_y.cuda(), net)
+        #     # train_acc = accuracy_score(net.predict(X), Y)
+        #     print('epoch %d ,loss %.4f' % (epoch + 1, train_loss) +', train acc {:.2f}%'
+        #           .format(train_acc*100))
+        #     torch.save(net, 'net80.pth')
 
 
+def main():
+    try:
+        net = torch.load('net80.pth')
+    except:
+        net = Net()
+    net = net.cuda()
+
+    loss_func = nn.BCELoss()
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
+    # loss_func = nn.MSELoss()
+
+    X, Y = data_filter('new_data_7.4_5.npy')
+
+    # net.eval()
+    # test_id = 50
+    # print(net(X[0].unsqueeze(0).cuda())[0], Y[0])
+    # print(net(X[0:100].cuda())[test_id], Y[test_id])
+    # print(net(X[0:100000].cuda())[test_id], Y[test_id])
+    # print(evaluate_accuracy(X.cuda(), Y.cuda(), net))
 
 
-if __name__ == '__main__':
+    # def test():
+    #     # todo: 检查下是因为时序导致的，还是因为batch size导致的, 先用dataloader shuffle，然后再看看区间正确率
+    #     X, Y = data_filter('new_data_7.7_5.npy')
+    #     test_dataloader = torch.utils.data.DataLoader(dataset=Data.TensorDataset(X[10000:20000], Y[10000:20000]),
+    #                                                   batch_size=128,
+    #                                                   shuffle=True)
+    #     acc = 0
+    #     count = 0
+    #     # print(evaluate_accuracy(X[0:100].cuda(), Y[0:100].cuda(), net))
+    #     for step, (batch_x, batch_y) in enumerate(test_dataloader):
+    #         count += 1
+    #         batch_x = batch_x.cuda()
+    #         batch_y = batch_y.cuda()
+    #         pre = net(batch_x)[-1].ge(0.5).item()
+    #         pre = 1 if pre else 0
+    #         if pre == int(batch_y[-1].item()):
+    #             acc += 1
+    #
+    #         # correct = (net(batch_x).ge(0.5) == batch_y).sum().item()
+    #         # n = batch_y.shape[0]
+    #         # acc += correct / n
+    #
+    #     acc /= count
+    #     print(acc)
+    #
+    #     acc = 0
+    #     count = 0
+    #     for i in range(10000, 20000):
+    #         count += 1
+    #         data_x = X[i - 1024: i]
+    #         pre = net(data_x.cuda())[-1].ge(0.5).item()
+    #         pre = 1 if pre else 0
+    #         if pre == int(Y[i].item()):
+    #             acc += 1
+    #     acc /= count
+    #     print(acc)
+    #
+    #     return
+    #
+    # test()
+    # return
 
-
-    X, Y = data_filter('data_7.7_5.npy')
     num_epochs = 1000
     torch.cuda.set_device(0)
     print(torch.cuda.get_device_name(torch.cuda.current_device()))
@@ -137,3 +169,6 @@ if __name__ == '__main__':
     torch.save(net, 'net80.pth')
     # torch.device(0)
     # print(os.cpu_count())
+
+if __name__ == '__main__':
+    main()

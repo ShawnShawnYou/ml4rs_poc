@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 
 
-def get_data(now_order, partner, rate, start_time, flag):
+def get_data(now_order, partner, rate, start_time, heatmap, flag):
     # now_order = reformat_orders[order_id]
     # partner = reformat_orders[max_cost_saving_partner[order_id]]
 
@@ -32,14 +32,30 @@ def get_data(now_order, partner, rate, start_time, flag):
             partner_end_grid[0],
             partner_end_grid[1],
 
+            heatmap[order_start_grid[0]][order_start_grid[1]],
+            heatmap[order_end_grid[0]][order_end_grid[1]],
+            heatmap[partner_start_grid[0]][partner_start_grid[1]],
+            heatmap[partner_end_grid[0]][partner_end_grid[1]],
+
             int(rate / 5),  # shareability
 
-            int((int(now_order.pickTime) - start_time) / 60),   # 目前已经等待的时间
+            int((int(now_order.pickTime) - start_time) / 60),   # 订单发布时间
+            int(max((int(partner.pickTime) - int(now_order.pickTime)) / 60, 0)),    # 订单等待时间，如果匹配到之前的订单就是0
+
             flag
-            # int((int(partner.pickTime) - int(now_order.pickTime)) / 60)
             ]
 
     return data
+
+
+def get_heatmap(orders):
+    ret = [[0 for y in range(NUM_GRID_Y)] for x in range(NUM_GRID_X)]
+    for order in orders:
+        order_start_grid = in_which_grid(order.pickX, order.pickY)
+        order_end_grid = in_which_grid(order.dropX, order.dropY)
+        ret[order_start_grid[0]][order_start_grid[1]] += 1
+        ret[order_end_grid[0]][order_end_grid[1]] += 1
+    return ret
 
 
 def grab():
@@ -66,6 +82,7 @@ def grab():
             reformat_orders[order.id] = order
 
         orders += last_round_order
+        heatmap = get_heatmap(orders)
 
         # 算法运行
 
@@ -80,7 +97,7 @@ def grab():
             if max_cost_saving[order_id] < t[order_id][0].rate:
 
                 data = get_data(reformat_orders[order_id], reformat_orders[max_cost_saving_partner[order_id]],
-                                t[order_id][0].rate, problem.startTime, 1)
+                                t[order_id][0].rate, problem.startTime, heatmap, 1)
 
                 dataset.append(data)
                 max_cost_saving[order_id] = t[order_id][0].rate
@@ -97,7 +114,7 @@ def grab():
                 last_round_order.append(order)
             elif update_flag[order.id] == 0:
                 data = get_data(reformat_orders[order.id], reformat_orders[max_cost_saving_partner[order.id]],
-                                t[order.id][0].rate, problem.startTime, 0)
+                                t[order.id][0].rate, problem.startTime, heatmap, 0)
                 dataset.append(data)
 
 
