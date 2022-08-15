@@ -135,10 +135,10 @@ def main():
             count += 1
             batch_x = batch_x.cuda()
             batch_y = batch_y.cuda()
-            pre = net(batch_x)[-1].ge(0.5).item()
-            pre = 1 if pre else 0
-            if pre == int(batch_y[-1].item()):
-                acc += 1
+            out = net(batch_x)
+            correct = (out.ge(0.5) == batch_y).sum().item()
+            n = batch_y.shape[0]
+            acc += correct / n
 
             # correct = (net(batch_x).ge(0.5) == batch_y).sum().item()
             # n = batch_y.shape[0]
@@ -190,15 +190,15 @@ def predict_api():
     features_np = numpy.asarray(features_str, int)
     data_x = torch.from_numpy(features_np).type(torch.FloatTensor)
 
-    out = net(data_x.cuda())
+    out = net(data_x.cuda()).ge(0.5).cpu().tolist()
 
     with open(PREDICT_RESULT_PATH, 'w') as f:
         for i in out:
-            tmp = 1 if i else 0
+            tmp = 1 if i[0] else 0
             f.write(str(tmp))
             f.write('\n')
 
-    print("predict finished")
+    # print("predict finished")
 
 
 
