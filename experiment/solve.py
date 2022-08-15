@@ -23,7 +23,7 @@ def solve(orders, current_time, last_round_orders,
 
     test_data = deepcopy(transfer_t)
     test_data_2 = deepcopy(transfer_t)
-
+    # return
     # 算法
     result_type = None
     if algorithm != 0:
@@ -94,4 +94,9 @@ if __name__ == '__main__':
     from datadeal.problem import ProblemInstance
 
     problemInstance = ProblemInstance(data_path, 1000)
-    solve(problemInstance, 1, True)
+    current_time = problemInstance.startTime
+
+    for i in range(10):
+        orders, drivers = problemInstance.batch(current_time + (i + 1) * fragment)
+
+        solve(orders=orders, current_time=current_time, last_round_orders=[], algorithm=1, with_G=False)

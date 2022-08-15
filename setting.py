@@ -8,6 +8,9 @@ data_path = data_dir_path + "raw_data//%02d/clear%d.csv" % (month, day)
 algorithm_path = r'E:\workspace\A-Experiment-code\FORM_Experiment_Code\FORM'
 
 
+FEATURE_PATH = "E:/workspace/A-Experiment-code/e_ride_test/file/features.txt"
+PREDICT_RESULT_PATH = "E:/workspace/A-Experiment-code/e_ride_test/file/results.txt"
+
 # 超参数
 fragment = 60
 base_wait_time = 60
@@ -45,7 +48,6 @@ YREGION = (40.70, 40.92)
 
 NUM_GRID_X = 500
 NUM_GRID_Y = 500
-
 
 
 

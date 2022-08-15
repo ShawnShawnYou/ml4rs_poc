@@ -47,6 +47,8 @@ class Order:
 
 
     def judgeLocation(self, range_xy):
+        if self.pickX == self.dropX and self.pickY == self.dropY:
+            return False
         if range_xy[0] < self.pickX < range_xy[1] and range_xy[2] < self.pickY < range_xy[3] and range_xy[
             0] < self.dropX < range_xy[1] and range_xy[2] < self.dropY < range_xy[3]:
             return True

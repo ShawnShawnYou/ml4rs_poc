@@ -58,9 +58,9 @@ def cost_saving(orders: List[Order]):
             if i == j:
                 continue
             vix = orders[i].dropX - orders[i].pickX
-            viy = orders[i].dropY - orders[i].pickY
-
             vjx = orders[j].dropX - orders[j].pickX
+
+            viy = orders[i].dropY - orders[i].pickY
             vjy = orders[j].dropY - orders[j].pickY
 
             cosTheta = (vix * vjx + viy * vjy) / (math.sqrt(vix * vix + viy * viy) * math.sqrt(vjx * vjx + vjy * vjy))
@@ -101,7 +101,8 @@ def cost_saving(orders: List[Order]):
                 else:
                     save_total = d_sum - share
                     save_individual = orders[i].absluteDistance-ci
-
+                save_individual /= orders[i].absluteDistance
+                save_individual_j = (orders[j].absluteDistance - (share - ci)) / orders[j].absluteDistance
                     # if save_total < 0:
                     #     save_total = 0
                     # if save_individual < 0:
@@ -110,7 +111,7 @@ def cost_saving(orders: List[Order]):
 
                 ptable.setdefault(key, plist).append(
                     myClass(orders[i].id, orders[j].id,
-                            int(save_total * 10**8), int(save_individual * 10**8),
+                            int(save_total * 10**8), save_individual,
                             round(rate * 100, 2)))
     return ptable
 

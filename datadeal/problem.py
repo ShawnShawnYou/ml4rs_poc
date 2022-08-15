@@ -47,14 +47,14 @@ class ProblemInstance:
             # else:
             #     orders.append(single_order)
             # single_order = next(ords)
-            self.waitOrder.remove(single_order)
+
             single_order.maxWait = base_wait_time + random.randint(0, wait_time_noise)
             orders.append(single_order)
             try:
                 single_order = next(ords)
             except Exception as e:
                 break
-
+        del(self.waitOrder[0: self.waitOrder.index(single_order)])
         drivers = list(filter(lambda x: x.relaxTime < currentTimestamp, self.drivers))
         # curIdMap = [None for x in range(len(orders))]
         # for i in range(len(orders)):

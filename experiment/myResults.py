@@ -63,7 +63,7 @@ def experiment(total_round=3000, algorithm_strategy=2, with_G_strategy=True):
 
         # 算法运行
         match, t, transfer_t, id_map = solve(orders=orders, current_time=current_time, last_round_orders=last_round_orders,
-                                 algorithm=algorithm_strategy, with_G=with_G_strategy)
+                                             algorithm=algorithm_strategy, with_G=with_G_strategy)
 
         # 算法正确初筛（匹配错误）
         if len(match) == 0:
@@ -206,8 +206,9 @@ def experiment_2(total_round=1000, algorithms=[1, 3]):
                 for j in my_class_list_i:
                     if j.match_id == partner + 1:
                         "************修正individual cost saving**********"
-                        if j.save_individual < 0:
-                            j.save_individual = 0
+                        # if j.save_individual < 0:
+                        #     print(j.save_individual)
+                        #     j.save_individual = 0
                         "***********************************************"
                         measurement[tmp_i]['total_cost_saving'] += j.save_individual
                         find_flag = True
@@ -285,20 +286,20 @@ def experiment_gas(total_round=1000):
 
 
 if __name__ == '__main__':
-    experiment_gas()
+    # experiment_gas()
     # # experiment 1
     # overall_measurement = experiment_gas(total_round)
     # print('algorithm_strategy:', 'gas',
     #       'with_G:', 'None',
     #       overall_measurement)
-    # for algorithm_strategy in [0, 1, 2, 3]:
-    #     for with_G in [True, False]:
-    #         if algorithm_strategy == 0 and with_G == False:
-    #             continue
-    #         overall_measurement = experiment(total_round, algorithm_strategy, with_G)
-    #         print('algorithm_strategy:', algorithm_strategy,
-    #               'with_G:', with_G,
-    #               overall_measurement)
+    for algorithm_strategy in [0, 1, 2, 3]:
+        for with_G in [True, False]:
+            if algorithm_strategy == 0 and with_G == False:
+                continue
+            overall_measurement = experiment(total_round, algorithm_strategy, with_G)
+            print('algorithm_strategy:', algorithm_strategy,
+                  'with_G:', with_G,
+                  overall_measurement)
 
 
-    experiment_2()
+    # experiment_2()
